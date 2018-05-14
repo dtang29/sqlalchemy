@@ -4,6 +4,8 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
 import datetime as dt
+from sqlalchemy import and_
+
 
 #################################################
 # Database Setup
@@ -43,6 +45,8 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
+        f"/api/v1.0/<start>"
+        
     )
 
 
@@ -103,6 +107,50 @@ def tobs():
         all_tobs.append(tobs_dict)
 
     return jsonify(all_tobs)
+
+
+@app.route("/api/v1.0/<start>/<end>")
+def start_end(start,end):
+    #Return a json list of the minimum temperature, the average temperature, and the max temperature for a given start or start-end range.
+
+    sel = [func.avg(Measurement.tobs),
+        func.max(Measurement.tobs),
+        func.min(Measurement.tobs)]
+
+
+    stats = session.query(*sel).\
+        filter(Measurement.date >= start, Measurement.date <= end).all()
+
+    all_stats = []
+    stats_dict = {}
+    stats_dict["TAVG"] = stats[0][0]
+    stats_dict["TMAX"] = stats[0][1]
+    stats_dict["TMIN"] = stats[0][2]
+    all_stats.append(stats_dict)
+
+    return jsonify(all_stats)
+
+@app.route("/api/v1.0/<start>")
+def start(start):
+    #Return a json list of the minimum temperature, the average temperature, and the max temperature for a given start or start-end range.
+
+    sel = [func.avg(Measurement.tobs),
+        func.max(Measurement.tobs),
+        func.min(Measurement.tobs)]
+
+
+    stats = session.query(*sel).\
+        filter(Measurement.date >= start).all()
+
+    all_stats = []
+    stats_dict = {}
+    stats_dict["TAVG"] = stats[0][0]
+    stats_dict["TMAX"] = stats[0][1]
+    stats_dict["TMIN"] = stats[0][2]
+    all_stats.append(stats_dict)
+
+    return jsonify(all_stats)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

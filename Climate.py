@@ -3,6 +3,7 @@ import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
+import datetime as dt
 
 #################################################
 # Database Setup
@@ -40,8 +41,8 @@ def welcome():
     return (
         f"Available Routes:<br/>"
         f"/api/v1.0/precipitation<br/>"
-        f"/api/v1.0/passengers"
-        f"/api/v1.0/stations"
+        f"/api/v1.0/stations<br/>"
+        f"/api/v1.0/tobs<br/>"
     )
 
 
@@ -49,7 +50,14 @@ def welcome():
 def precipitation():
 
     # Query for the dates and temperature observations from the last year.
-    results = session.query(Measurement).all()
+    
+    #Find what last year is
+    year =  int(dt.date.today().strftime("%Y")) - 1
+    
+    #Filter query for last year data only
+    results = session.query(Measurement).\
+              filter(func.strftime("%Y", Measurement.date) == str(year)).all()
+
     all_tobs = []
     for temp in results:
         tobs_dict = {}
@@ -61,14 +69,40 @@ def precipitation():
 
 
 @app.route("/api/v1.0/stations")
-def normal():
-    return hello_dict
+def stations():
+
+    #Return a json list of stations from the dataset.
+    stations = session.query(Station).all()
+    all_stations = []
+    for station in stations:
+        stations_dict = {}
+        stations_dict["Station"] = station.station
+        stations_dict["Name"] = station.name
+        all_stations.append(stations_dict)
+    
+    return jsonify(all_stations)
 
 
-# @app.route("/api/v1.0/tobs")
-# def jsonified():
-#     return jsonify(hello_dict)
 
+@app.route("/api/v1.0/tobs")
+def tobs():
+
+    #Return a json list of Temperature Observations (tobs) for the previous year
+    
+    #Find what last year is
+    year =  int(dt.date.today().strftime("%Y")) - 1
+    
+    #Filter query for last year data only
+    results = session.query(Measurement).\
+              filter(func.strftime("%Y", Measurement.date) == str(year)).all()
+
+    all_tobs = []
+    for temp in results:
+        tobs_dict = {}
+        tobs_dict["Tobs"] = temp.tobs
+        all_tobs.append(tobs_dict)
+
+    return jsonify(all_tobs)
 
 if __name__ == "__main__":
     app.run(debug=True)
